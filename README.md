@@ -121,4 +121,22 @@ Devuelve leads con correo generado, ordenados desde el mas reciente.
 
 ## Preguntas tecnicas
 
-Si llegaran 500 requests en 1 segundo, probablemente se saturaria primero la dependencia con el LLM por latencia y rate limits, y luego el pool de PostgreSQL si cada request escribe inmediatamente; para escalarlo separaria la recepcion del lead de la generacion del correo, respondiendo `202 Accepted`, dejando el lead en estado `pending` y procesandolo con cola, workers, limites de concurrencia, rate limiting, timeouts, retries con backoff y cache para evitar regeneraciones repetidas. El principal riesgo de prompt injection es que campos externos intenten cambiar las instrucciones del modelo, por eso se validan tipos, largos, dominio, patrones sospechosos y se delimitan los datos como no confiables dentro del prompt, sin depender solo de una blacklist. En produccion controlaria resiliencia y costo con maximo 3 reintentos, limites de tokens, modelo configurable, registro de intentos, tokens, costo estimado y errores; para observabilidad guardaria `request_id`, `company_id`, version del prompt, modelo, latencia, estado final y validaciones de calidad, cuidando datos sensibles. En AWS usaria ECS Fargate para API y workers, RDS PostgreSQL, SQS con dead-letter queue, Secrets Manager o Parameter Store, CloudWatch, Application Load Balancer, autoscaling y alertas con SNS.
+### 1. Escala: 500 requests en 1 segundo
+
+Si el endpoint recibiera 500 requests en 1 segundo, probablemente se saturaria primero la dependencia con el LLM por latencia y rate limits; despues podria saturarse el pool de PostgreSQL si cada request escribe inmediatamente. Para escalarlo, separaria la recepcion del lead de la generacion del correo: `POST /leads` validaria, guardaria el lead en estado `pending` y responderia `202 Accepted`; luego una cola procesaria los leads con workers, limites de concurrencia, rate limiting, timeouts, retries con backoff y cache para evitar regenerar correos repetidos.
+
+### 2. Prompt injection
+
+El riesgo principal es que campos externos como `nombre_empresa` o `cargo_contacto` incluyan instrucciones maliciosas y el modelo las interprete como parte del prompt. Para mitigarlo se validan tipos, largos maximos y formato, se detectan patrones sospechosos basicos, se delimitan los datos en `<lead_data>` como informacion externa no confiable y se usa un system prompt defensivo; no dependeria solo de una blacklist porque siempre pueden aparecer nuevas formas de escribir una instruccion maliciosa.
+
+### 3. Resiliencia y costo del LLM
+
+En produccion manejaria las llamadas al LLM con timeouts, maximo 3 reintentos y backoff para no insistir inmediatamente ante errores temporales o rate limits. Para controlar costos, limitaria el tamano del input, los tokens de salida y la temperatura; ademas registraria tokens usados, costo estimado, modelo utilizado y cantidad de intentos, evaluando cache o modelos mas baratos para tareas simples.
+
+### 4. Observabilidad y calidad
+
+Registraria por cada llamada un `request_id`, `company_id`, version del prompt, modelo usado, cantidad de intentos, latencia, estado final, tokens de entrada y salida, y si la respuesta paso validaciones minimas de calidad. Para evitar exponer datos sensibles, guardaria prompts completos solo cuando sea necesario o usaria versiones sanitizadas; tambien monitorearia latencia, respuestas rechazadas y casos sospechosos de baja calidad o alucinacion.
+
+### 5. Produccion en AWS
+
+Para desplegarlo en AWS usaria ECS Fargate para correr la API y workers sin administrar servidores, RDS PostgreSQL para la base de datos, SQS para desacoplar la generacion de correos, Secrets Manager o Parameter Store para credenciales, CloudWatch para logs y metricas, Application Load Balancer para exponer la API, autoscaling para crecer segun carga y una dead-letter queue para mensajes fallidos.
