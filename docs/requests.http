@@ -1,0 +1,15 @@
+### Health
+GET http://localhost:3000/health
+
+### Crear lead
+POST http://localhost:3000/leads
+Content-Type: application/json
+
+{
+  "nombre_empresa": "Acme",
+  "dominio": "acme.com",
+  "cargo_contacto": "Gerente Comercial"
+}
+
+### Listar leads
+GET http://localhost:3000/leads
