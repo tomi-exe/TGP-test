@@ -18,7 +18,12 @@ export async function createLeadController(req, res, next) {
         outreach: {
           id: result.outreach.id,
           correo_generado: result.outreach.email,
+          llm_provider: result.outreach.llm_provider,
+          llm_model: result.outreach.llm_model,
+          status: result.outreach.status,
+          attempts: result.outreach.attempts,
           created_at: result.outreach.created_at,
+          updated_at: result.outreach.updated_at,
         },
       },
     });
