@@ -5,3 +5,4 @@ npm-debug.log*
 .dist/
 EXPLICACION_REPO_LOCAL.md
 GUION_VIDEO_LOCAL.md
+.env
