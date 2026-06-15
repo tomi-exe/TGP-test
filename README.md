@@ -121,12 +121,4 @@ Devuelve leads con correo generado, ordenados desde el mas reciente.
 
 ## Preguntas tecnicas
 
-**a) Escala:** si llegan 500 requests en 1 segundo, probablemente se saturan primero Groq o el pool de PostgreSQL. Escalaria con cola, workers, rate limiting, mas instancias de API y limites de concurrencia hacia el LLM.
-
-**b) Prompt injection:** el riesgo es que el usuario meta instrucciones dentro de los campos del lead. Se mitiga con validacion, blacklist basica, delimitacion clara y system prompt defensivo.
-
-**c) Resiliencia y costo del LLM:** los retries ayudan ante fallos temporales, pero aumentan latencia y costo. En produccion agregaria timeouts, circuit breaker, limites por usuario y monitoreo de rate limits.
-
-**d) Observabilidad y calidad:** registraria latencia, intentos, errores, modelo usado, tokens, prompt y respuesta con cuidado de datos sensibles. Para calidad mediria respuestas vacias, alucinaciones y revisiones manuales.
-
-**e) Produccion en AWS:** usaria ECS Fargate o Lambda para la API, RDS PostgreSQL para base de datos, Secrets Manager para credenciales, CloudWatch para logs, ALB/API Gateway para entrada y SQS para jobs asincronos.
+Si llegaran 500 requests en 1 segundo, probablemente se saturaria primero la dependencia con el LLM por latencia y rate limits, y luego el pool de PostgreSQL si cada request escribe inmediatamente; para escalarlo separaria la recepcion del lead de la generacion del correo, respondiendo `202 Accepted`, dejando el lead en estado `pending` y procesandolo con cola, workers, limites de concurrencia, rate limiting, timeouts, retries con backoff y cache para evitar regeneraciones repetidas. El principal riesgo de prompt injection es que campos externos intenten cambiar las instrucciones del modelo, por eso se validan tipos, largos, dominio, patrones sospechosos y se delimitan los datos como no confiables dentro del prompt, sin depender solo de una blacklist. En produccion controlaria resiliencia y costo con maximo 3 reintentos, limites de tokens, modelo configurable, registro de intentos, tokens, costo estimado y errores; para observabilidad guardaria `request_id`, `company_id`, version del prompt, modelo, latencia, estado final y validaciones de calidad, cuidando datos sensibles. En AWS usaria ECS Fargate para API y workers, RDS PostgreSQL, SQS con dead-letter queue, Secrets Manager o Parameter Store, CloudWatch, Application Load Balancer, autoscaling y alertas con SNS.
