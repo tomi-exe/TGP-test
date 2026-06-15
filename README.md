@@ -143,6 +143,7 @@ Ejemplo de respuesta:
 - Prompt con datos delimitados en `<lead_data>`.
 - El system prompt indica que los datos del lead son externos y nunca deben tratarse como instrucciones.
 - El prompt evita placeholders como `[Tu nombre]`, no inventa experiencia previa, cifras ni clientes similares, y personaliza solo con `nombre_empresa`, `dominio` y `cargo_contacto`.
+- Groq debe responder JSON con `{ "email": "..." }`; el backend parsea ese campo y lo valida. Si el JSON es inválido, viene vacío o contiene placeholders/afirmaciones no soportadas, se considera error reintentable.
 
 ## Qué mejoraría con más tiempo
 

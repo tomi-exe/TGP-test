@@ -101,6 +101,7 @@ export async function listLeads() {
         o.updated_at
       FROM lead_outreach o
       INNER JOIN companies c ON c.id = o.company_id
+      WHERE o.status = 'generated'
       ORDER BY o.created_at DESC
     `,
   );
